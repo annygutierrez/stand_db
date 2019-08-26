@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../auth');
+const rjwt = require('restify-jwt-community');
 const config = require('../config');
 
 module.exports = server => {
@@ -32,8 +33,25 @@ module.exports = server => {
     });
   });
 
-  // Auth user
+  // Get user
+  server.get('/users/:id', rjwt({ secret: config.JWT_SECRET }), async (req, res, next) => {
+    try {
+      const user = await User.findById(req.params.id);
 
+      const token = jwt.sign(user.toJSON(), config.JWT_SECRET, {
+        expiresIn: '15m'
+      });
+
+      const { iat, exp } = jwt.decode(token);
+      // Respond with token
+      res.send({ user, iat, exp, token });
+      next();
+    } catch (err) {
+       return next(new errors.ResourceNotFoundError(`There is no customer with the id of ${req.params.id}`));
+    }
+  });
+
+  // Auth user
   server.post('/auth', async (req, res, next) => {
       const { email, password, username } = req.body;
 
