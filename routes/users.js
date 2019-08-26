@@ -24,7 +24,14 @@ module.exports = server => {
         // Save User
         try {
           const newUser = await user.save();
-          res.send(201);
+          const token = jwt.sign(user.toJSON(), config.JWT_SECRET, {
+            expiresIn: '15m'
+          });
+    
+          const { iat, exp } = jwt.decode(token);
+          // Respond with token
+          res.send({ iat, exp, token });
+          // res.send(201);
           next();
         } catch (err) {
           return next(new errors.InternalError(err.message));
